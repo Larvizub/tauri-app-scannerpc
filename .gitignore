@@ -32,10 +32,33 @@ src-tauri/bin
 # Bun
 bun.lockb
 node_modules/
+functions/node_modules/
+functions/lib/
 
 # Firebase
-.firebase
+.firebase/
+firebase-debug.log*
 .runtimeconfig.json
-firebase-debug.log
-functions/lib/
-functions/node_modules/
+firestore-debug.log*
+pubsub-debug.log*
+ui-debug.log*
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+src-tauri/bin/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# App outputs
+dist/
+dist-ssr/
+build/
