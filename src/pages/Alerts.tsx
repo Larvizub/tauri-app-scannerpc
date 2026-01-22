@@ -26,19 +26,21 @@ export default function Alerts() {
             </div>
             <CardDescription>Notificar cuando el uso del CPU exceda el límite.</CardDescription>
           </CardHeader>
-          <CardContent className='space-y-4'>
-            <div className='flex items-center justify-between'>
-              <Label htmlFor='cpu-alert'>Activar alerta de CPU</Label>
-              <Switch id='cpu-alert' defaultChecked />
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='cpu-threshold'>Umbral de uso (%)</Label>
-              <Input 
-                id='cpu-threshold' 
-                type='number' 
-                value={cpuThreshold} 
-                onChange={(e) => setCpuThreshold(parseInt(e.target.value))} 
-              />
+          <CardContent>
+            <div className='space-y-4'>
+              <div className='flex items-center justify-between'>
+                <Label htmlFor='cpu-alert'>Activar alerta de CPU</Label>
+                <Switch id='cpu-alert' defaultChecked />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='cpu-threshold'>Umbral de uso (%)</Label>
+                <Input 
+                  id='cpu-threshold' 
+                  type='number' 
+                  value={cpuThreshold} 
+                  onChange={(e) => setCpuThreshold(parseInt(e.target.value))} 
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -51,19 +53,21 @@ export default function Alerts() {
             </div>
             <CardDescription>Notificar cuando la memoria RAM esté casi llena.</CardDescription>
           </CardHeader>
-          <CardContent className='space-y-4'>
-            <div className='flex items-center justify-between'>
-              <Label htmlFor='ram-alert'>Activar alerta de RAM</Label>
-              <Switch id='ram-alert' defaultChecked />
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='ram-threshold'>Umbral de uso (%)</Label>
-              <Input 
-                id='ram-threshold' 
-                type='number' 
-                value={ramThreshold} 
-                onChange={(e) => setRamThreshold(parseInt(e.target.value))} 
-              />
+          <CardContent>
+            <div className='space-y-4'>
+              <div className='flex items-center justify-between'>
+                <Label htmlFor='ram-alert'>Activar alerta de RAM</Label>
+                <Switch id='ram-alert' defaultChecked />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='ram-threshold'>Umbral de uso (%)</Label>
+                <Input 
+                  id='ram-threshold' 
+                  type='number' 
+                  value={ramThreshold} 
+                  onChange={(e) => setRamThreshold(parseInt(e.target.value))} 
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

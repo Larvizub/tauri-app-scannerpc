@@ -3,7 +3,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { FileText, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-const data = [
+interface ReportData {
+  name: string
+  cpu: number
+  ram: number
+}
+
+const data: ReportData[] = [
   { name: 'Lun', cpu: 45, ram: 60 },
   { name: 'Mar', cpu: 52, ram: 65 },
   { name: 'Mie', cpu: 48, ram: 62 },
@@ -61,9 +67,10 @@ export default function Reports() {
             <CardTitle>Rendimiento por Día</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className='h-[400px]'>
-          <ResponsiveContainer width='100%' height='100%'>
-            <BarChart data={data}>
+        <CardContent>
+          <div className='h-100 w-full'>
+            <ResponsiveContainer width='100%' height='100%' debounce={1}>
+              <BarChart data={data}>
               <CartesianGrid strokeDasharray='3 3' vertical={false} />
               <XAxis dataKey='name' />
               <YAxis />
@@ -73,8 +80,9 @@ export default function Reports() {
               <Bar dataKey='ram' fill='#dc2626' name='Promedio RAM %' radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      </CardContent>
+    </Card>
     </div>
   )
 }

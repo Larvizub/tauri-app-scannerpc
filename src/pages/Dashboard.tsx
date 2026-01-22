@@ -8,20 +8,26 @@ import { AlertTriangle, Cpu, HardDrive, Network, Zap } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useState, useEffect } from 'react'
 
+interface HistoryItem {
+  time: string
+  cpu: number
+  ram: number
+}
+
 export default function Dashboard() {
   const stats = useTelemetry()
   const health = checkSystemHealth(stats)
-  const [history, setHistory] = useState<any[]>([])
+  const [history, setHistory] = useState<HistoryItem[]>([])
 
   useEffect(() => {
     if (stats) {
       setHistory(prev => {
-        const newHistory = [...prev, {
+        const newItem: HistoryItem = {
           time: new Date().toLocaleTimeString(),
-          cpu: stats.cpu_usage.toFixed(1),
-          ram: stats.memory_usage_pct.toFixed(1)
-        }].slice(-20)
-        return newHistory
+          cpu: Number(stats.cpu_usage.toFixed(1)),
+          ram: Number(stats.memory_usage_pct.toFixed(1))
+        }
+        return [...prev, newItem].slice(-20)
       })
     }
   }, [stats])
@@ -48,7 +54,7 @@ export default function Dashboard() {
           <AlertTitle className='font-bold'>Alertas de Rendimiento</AlertTitle>
           <AlertDescription>
             <ul className='list-disc pl-5 mt-1'>
-              {health.warnings.map((w, i) => <li key={i}>{w}</li>)}
+              {health.warnings.map((w) => <li key={w}>{w}</li>)}
             </ul>
           </AlertDescription>
         </Alert>
@@ -107,9 +113,10 @@ export default function Dashboard() {
         <CardHeader>
           <CardTitle>Historial de Rendimiento</CardTitle>
         </CardHeader>
-        <CardContent className='h-[400px]'>
-          <ResponsiveContainer width='100%' height='100%'>
-            <LineChart data={history}>
+        <CardContent>
+          <div className='h-100 w-full'>
+            <ResponsiveContainer width='100%' height='100%' debounce={1}>
+              <LineChart data={history}>
               <CartesianGrid strokeDasharray='3 3' opacity={0.3} />
               <XAxis dataKey='time' hide />
               <YAxis domain={[0, 100]} stroke='#888888' fontSize={12} tickLine={false} axisLine={false} />
@@ -136,8 +143,9 @@ export default function Dashboard() {
               />
             </LineChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      </CardContent>
+    </Card>
     </div>
   )
 }
