@@ -62,3 +62,7 @@ Thumbs.db
 dist/
 dist-ssr/
 build/
+
+# Environment files
+.env
+.env.*
