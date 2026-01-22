@@ -14,6 +14,13 @@ export const getLatestMetrics = functions.https.onRequest(async (req: functions.
     return;
   }
 
+  // Autenticación: verificar ID token de Firebase o clave de servicio
+  const authResult = await authenticateRequest(req);
+  if (!authResult) {
+    res.status(401).send("No autorizado");
+    return;
+  }
+
   try {
     const snapshot = await admin.database()
       .ref(`metrics/${deviceId}`)
@@ -35,6 +42,12 @@ export const postExternalAlert = functions.https.onRequest(async (req: functions
     res.status(405).send("Método no permitido");
     return;
   }
+  // Autenticación: verificar ID token de Firebase o clave de servicio
+  const authResult = await authenticateRequest(req);
+  if (!authResult) {
+    res.status(401).send("No autorizado");
+    return;
+  }
 
   const { deviceId, message, level } = req.body;
 
@@ -48,7 +61,7 @@ export const postExternalAlert = functions.https.onRequest(async (req: functions
       message,
       level: level || "info",
       timestamp: admin.database.ServerValue.TIMESTAMP,
-      source: "external-api"
+      source: authResult.uid ? `user:${authResult.uid}` : "external-api"
     });
 
     res.status(200).send("Alerta registrada");
@@ -56,3 +69,29 @@ export const postExternalAlert = functions.https.onRequest(async (req: functions
     res.status(500).send("Error al guardar alerta");
   }
 });
+
+/**
+ * Helper: autentica la request usando un ID token de Firebase (Authorization: Bearer <idToken>)
+ * o mediante una clave estática en `process.env.FUNCTIONS_API_KEY` pasada como `x-api-key`.
+ */
+async function authenticateRequest(req: functions.https.Request) {
+  const authHeader = (req.get('Authorization') || '') as string;
+  if (authHeader.startsWith('Bearer ')) {
+    const idToken = authHeader.split(' ')[1];
+    try {
+      const decoded = await admin.auth().verifyIdToken(idToken);
+      return { uid: decoded.uid };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  // fallback: api key
+  const apiKey = process.env.FUNCTIONS_API_KEY;
+  const xApiKey = (req.get('x-api-key') || req.get('X-API-KEY')) as string | undefined;
+  if (apiKey && xApiKey && xApiKey === apiKey) {
+    return { service: true };
+  }
+
+  return null;
+}
