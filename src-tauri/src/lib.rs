@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use sysinfo::{System, Disks, Networks};
-use std::sync::{Arc, Mutex};
-use tauri::{Manager, Runtime, Emitter};
+use std::sync::Mutex;
+use tauri::Emitter;
 use std::thread;
 use std::time::Duration;
 
@@ -31,7 +31,7 @@ fn get_stats(sys: &mut System) -> SystemStats {
     sys.refresh_cpu_all();
     sys.refresh_memory();
 
-    let cpu_usage = sys.global_cpu_info().cpu_usage();
+    let cpu_usage = sys.global_cpu_usage();
     let total_memory = sys.total_memory();
     let used_memory = sys.used_memory();
     let memory_usage_pct = (used_memory as f64 / total_memory as f64) * 100.0;
