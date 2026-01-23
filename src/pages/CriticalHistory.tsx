@@ -136,10 +136,10 @@ export default function CriticalHistory() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-37.5">
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -154,7 +154,7 @@ export default function CriticalHistory() {
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <Select value={filterDate} onValueChange={setFilterDate}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-37.5">
                 <SelectValue placeholder="Fecha" />
               </SelectTrigger>
               <SelectContent>
@@ -171,14 +171,14 @@ export default function CriticalHistory() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-[140px] h-9"
+                className="w-35 h-9"
               />
               <span className="text-muted-foreground">a</span>
               <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-[140px] h-9"
+                className="w-35 h-9"
               />
             </div>
           )}
@@ -199,7 +199,7 @@ export default function CriticalHistory() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[400px]">
+              <ScrollArea className="h-96">
                 <div className="space-y-4">
                   {filteredEvents.length === 0 ? (
                     <p className="text-center text-muted-foreground py-10"> No se han detectado eventos críticos aún.</p>
@@ -237,7 +237,7 @@ export default function CriticalHistory() {
               <CardHeader>
                 <CardTitle>Frecuencia de Sobrecargas</CardTitle>
               </CardHeader>
-              <CardContent className="h-[300px]">
+              <CardContent className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -261,7 +261,7 @@ export default function CriticalHistory() {
               <CardHeader>
                 <CardTitle>Distribución Crítica</CardTitle>
               </CardHeader>
-              <CardContent className="h-[300px]">
+              <CardContent className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -290,7 +290,7 @@ export default function CriticalHistory() {
               <CardHeader>
                 <CardTitle>Tendencia Temporal</CardTitle>
               </CardHeader>
-              <CardContent className="h-[300px]">
+              <CardContent className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={timelineData}>
                     <defs>
