@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, push, set } from "firebase/database";
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 // Configuración desde variables de entorno (Vite):
 // Crea un archivo .env.local con las variables VITE_FIREBASE_* (ver .env.example)
@@ -15,6 +16,17 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
+export const auth = getAuth(app);
+
+/**
+ * Autentica al usuario de forma anónima para tener una sesión activa.
+ */
+export const loginAnonymously = () => signInAnonymously(auth);
+
+/**
+ * Obtiene el ID Token del usuario actual (útil para llamar a las Functions).
+ */
+export const getIdToken = () => auth.currentUser?.getIdToken();
 
 export async function saveMetrics(deviceId: string, stats: any) {
   const metricsRef = ref(db, `metrics/${deviceId}/${new Date().toISOString().split('T')[0]}`);

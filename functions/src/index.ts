@@ -6,7 +6,7 @@ admin.initializeApp();
 /**
  * Endpoint para obtener las últimas métricas de un dispositivo.
  */
-export const getLatestMetrics = functions.https.onRequest(async (req: functions.https.Request, res: any) => {
+export const getLatestMetrics = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {
   const deviceId = req.query.deviceId as string;
 
   if (!deviceId) {
@@ -37,7 +37,7 @@ export const getLatestMetrics = functions.https.onRequest(async (req: functions.
 /**
  * Endpoint para enviar alertas externas.
  */
-export const postExternalAlert = functions.https.onRequest(async (req: functions.https.Request, res: any) => {
+export const postExternalAlert = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {
   if (req.method !== "POST") {
     res.status(405).send("Método no permitido");
     return;
