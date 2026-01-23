@@ -2,8 +2,6 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, ref, push, set } from "firebase/database";
 import { getAuth, signInAnonymously } from "firebase/auth";
 
-// Configuración desde variables de entorno (Vite):
-// Crea un archivo .env.local con las variables VITE_FIREBASE_* (ver .env.example)
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
