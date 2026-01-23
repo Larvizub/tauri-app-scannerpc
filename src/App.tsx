@@ -4,8 +4,9 @@ import Dashboard from '@/pages/Dashboard'
 import Alerts from '@/pages/Alerts'
 import Reports from '@/pages/Reports'
 import Apps from '@/pages/Apps'
+import CriticalHistory from '@/pages/CriticalHistory'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard, Bell, FileBarChart, Package } from 'lucide-react'
+import { LayoutDashboard, Bell, FileBarChart, Package, AlertOctagon } from 'lucide-react'
 import { useFirebaseSync } from '@/hooks/useFirebaseSync'
 
 function App() {
@@ -44,6 +45,12 @@ function App() {
                   Aplicaciones
                 </Button>
               </Link>
+              <Link to='/critical-history'>
+                <Button variant='ghost' className='w-full justify-start gap-2 text-red-500 hover:text-red-600 hover:bg-red-500/10'>
+                  <AlertOctagon className='h-4 w-4' />
+                  Historial Crítico
+                </Button>
+              </Link>
             </nav>
           </aside>
           <main className='flex-1 overflow-auto'>
@@ -52,6 +59,7 @@ function App() {
               <Route path='/alerts' element={<Alerts />} />
               <Route path='/reports' element={<Reports />} />
               <Route path='/apps' element={<Apps />} />
+              <Route path='/critical-history' element={<CriticalHistory />} />
             </Routes>
           </main>
         </div>

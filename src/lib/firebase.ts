@@ -47,6 +47,18 @@ export async function saveInstalledApps(deviceId: string, apps: any[]) {
 }
 
 /**
+ * Guarda un evento crítico de rendimiento.
+ */
+export async function saveCriticalEvent(deviceId: string, event: any) {
+  const eventsRef = ref(db, `critical_history/${deviceId}`);
+  const newEventRef = push(eventsRef);
+  await set(newEventRef, {
+    ...event,
+    timestamp: Date.now()
+  });
+}
+
+/**
  * Guarda la configuración del equipo.
  */
 export async function saveConfig(deviceId: string, config: any) {

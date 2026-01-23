@@ -50,7 +50,26 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 }
 ```
 
-### 3. Enviar Alerta Externa
+### 3. Obtener Historial Crítico
+`GET /getCriticalHistory?deviceId={deviceId}`
+
+**Parámetros:**
+- `deviceId` (string): Identificador único de la computadora (hostname).
+
+**Respuesta (200 OK):**
+```json
+{
+  "-UniqueEventID": {
+    "type": "CPU",
+    "value": 92.5,
+    "threshold": 90,
+    "message": "Uso de CPU crítico (>90%)",
+    "timestamp": 1674384000000
+  }
+}
+```
+
+### 4. Enviar Alerta Externa
 `POST /postExternalAlert`
 
 **Body:**
