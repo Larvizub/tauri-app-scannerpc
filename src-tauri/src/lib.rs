@@ -98,7 +98,6 @@ fn get_stats(sys: &mut System) -> SystemStats {
     if network_rx == 0 && cfg!(target_os = "macos") {
         let (mac_rx, mac_tx) = get_macos_network_stats();
         if mac_rx > 0 {
-            println!("DEBUG: Using macos netstat fallback: rx={}, tx={}", mac_rx, mac_tx);
             network_rx = mac_rx;
             network_tx = mac_tx;
         }
@@ -205,10 +204,6 @@ pub fn run() {
                             stats_out.network_tx_bps = tx_delta / elapsed;
                         }
                     }
-
-                    // Debug: print totals and bps
-                    println!("DEBUG system-stats network_rx={} network_tx={} rx_bps={} tx_bps={}",
-                        stats_out.network_rx, stats_out.network_tx, stats_out.network_rx_bps, stats_out.network_tx_bps);
 
                     prev_stats = Some(stats_out.clone());
                     prev_instant = now;

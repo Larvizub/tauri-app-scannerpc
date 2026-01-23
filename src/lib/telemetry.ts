@@ -24,11 +24,6 @@ export function useTelemetry() {
 
   useEffect(() => {
     const unlisten = listen<SystemStats>("system-stats", (event) => {
-      try {
-        // Debug: imprimir payload para verificar network_rx/network_tx
-        // eslint-disable-next-line no-console
-        console.debug("system-stats payload:", event.payload);
-      } catch (e) {}
       setStats(event.payload);
     });
 
