@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertTriangle, Cpu, HardDrive, Network, Zap } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface HistoryItem {
   time: string
@@ -18,19 +18,29 @@ export default function Dashboard() {
   const stats = useTelemetry()
   const health = checkSystemHealth(stats)
   const [history, setHistory] = useState<HistoryItem[]>([])
+  const statsRef = useRef(stats)
 
   useEffect(() => {
-    if (stats) {
-      setHistory(prev => {
-        const newItem: HistoryItem = {
-          time: new Date().toLocaleTimeString(),
-          cpu: Number(stats.cpu_usage.toFixed(1)),
-          ram: Number(stats.memory_usage_pct.toFixed(1))
-        }
-        return [...prev, newItem].slice(-20)
-      })
-    }
+    statsRef.current = stats
   }, [stats])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentStats = statsRef.current
+      if (currentStats) {
+        setHistory(prev => {
+          const newItem: HistoryItem = {
+            time: new Date().toLocaleTimeString(),
+            cpu: Number(currentStats.cpu_usage.toFixed(1)),
+            ram: Number(currentStats.memory_usage_pct.toFixed(1))
+          }
+          return [...prev, newItem].slice(-20)
+        })
+      }
+    }, 5000) // Actualizar cada 5 segundos
+
+    return () => clearInterval(interval)
+  }, [])
 
   if (!stats) {
     return (
