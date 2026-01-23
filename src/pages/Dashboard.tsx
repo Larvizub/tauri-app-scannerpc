@@ -33,7 +33,15 @@ export default function Dashboard() {
   }, [stats])
 
   if (!stats) {
-    return <div className='p-8 text-center'>Cargando telemetría del sistema...</div>
+    return (
+      <div className='fixed inset-0 flex items-center justify-center p-8 bg-background'>
+        <div
+          role='status'
+          aria-label='Cargando telemetría'
+          className='w-14 h-14 border-4 border-t-primary rounded-full animate-spin'
+        />
+      </div>
+    )
   }
 
   return (

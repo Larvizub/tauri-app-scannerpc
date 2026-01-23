@@ -45,7 +45,16 @@ export default function Alerts() {
     }
   }
 
-  if (loading) return <div className="p-8">Cargando configuración...</div>
+  if (loading)
+    return (
+      <div className='fixed inset-0 flex items-center justify-center p-8 bg-background'>
+        <div
+          role='status'
+          aria-label='Cargando configuración'
+          className='w-14 h-14 border-4 border-t-primary rounded-full animate-spin'
+        />
+      </div>
+    )
 
   return (
     <div className='p-8 space-y-6 max-w-4xl mx-auto'>
