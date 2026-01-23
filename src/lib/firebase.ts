@@ -67,6 +67,18 @@ export async function saveConfig(deviceId: string, config: any) {
 }
 
 /**
+ * Registra o actualiza el dispositivo en la lista de usuarios/equipos.
+ */
+export async function registerDevice(deviceId: string) {
+  const deviceRef = ref(db, `devices/${deviceId}`);
+  await set(deviceRef, {
+    hostname: deviceId,
+    lastSeen: Date.now(),
+    os: navigator.platform
+  });
+}
+
+/**
  * Obtiene la configuración del equipo.
  */
 export async function getConfig(deviceId: string) {

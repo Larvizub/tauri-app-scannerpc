@@ -1,32 +1,54 @@
 import { useEffect, useState, useRef } from "react";
 import { useTelemetry } from "@/lib/telemetry";
-import { saveMetrics, loginAnonymously, saveInstalledApps, saveCriticalEvent } from "@/lib/firebase";
+import { 
+  saveMetrics, 
+  loginAnonymously, 
+  saveInstalledApps, 
+  saveCriticalEvent,
+  registerDevice 
+} from "@/lib/firebase";
 import { invoke } from "@tauri-apps/api/core";
 import { checkSystemHealth } from "@/lib/healthRules";
 
 export function useFirebaseSync() {
   const stats = useTelemetry();
-  const [hostname, setHostname] = useState<string>("unknown-pc");
+  const [hostname, setHostname] = useState<string | null>(null);
   const lastEventSaved = useRef<Record<string, number>>({});
+  const statsRef = useRef(stats);
+
+  // Actualizar la referencia de los stats para el intervalo
+  useEffect(() => {
+    statsRef.current = stats;
+  }, [stats]);
 
   useEffect(() => {
-    // Autenticar automáticamente al iniciar la app
-    loginAnonymously().catch(console.error);
+    const initSync = async () => {
+      try {
+        // 1. Autenticar primero (CRÍTICO para permisos de escritura)
+        await loginAnonymously();
+        console.log("Autenticación anónima exitosa");
 
-    // Obtener el nombre del equipo y sincronizar apps
-    invoke<string>("get_hostname").then((name) => {
-      setHostname(name);
-      
-      // Sincronizar aplicaciones instaladas una vez al iniciar
-      invoke<any[]>("get_installed_apps")
-        .then((apps) => {
-          saveInstalledApps(name, apps).catch(console.error);
-        })
-        .catch(console.error);
-    }).catch(console.error);
+        // 2. Obtener el nombre del equipo
+        const name = await invoke<string>("get_hostname");
+        setHostname(name);
+        
+        // 3. Registrar el dispositivo como "usuario" en la BD
+        await registerDevice(name);
+        
+        // 4. Sincronizar aplicaciones instaladas una vez al iniciar
+        const apps = await invoke<any[]>("get_installed_apps");
+        await saveInstalledApps(name, apps);
+        
+        console.log(`Sincronización inicial completada para: ${name}`);
+      } catch (error) {
+        console.error("Error en la sincronización inicial:", error);
+      }
+    };
+
+    initSync();
   }, []);
 
-  // Monitor de eventos críticos
+  // Monitor de eventos críticos (se dispara con cada actualización de stats)
   useEffect(() => {
     if (!stats || !hostname) return;
 
@@ -34,24 +56,29 @@ export function useFirebaseSync() {
     const now = Date.now();
 
     criticalEvents.forEach(event => {
-      // Evitar guardar el mismo tipo de evento más de una vez cada 5 minutos
+      // Evitar guardar el mismo tipo de evento más de una vez cada 5 minutos para no saturar
       const lastSavedTime = lastEventSaved.current[event.type] || 0;
-      if (now - lastSavedTime > 5 * 60 * 1000) {
-        saveCriticalEvent(hostname, event).catch(console.error);
+      if (now - lastSavedTime > 300000) { // 5 minutos
+        saveCriticalEvent(hostname, event)
+          .then(() => console.log(`Evento crítico guardado: ${event.type}`))
+          .catch(console.error);
         lastEventSaved.current[event.type] = now;
       }
     });
-
   }, [stats, hostname]);
 
+  // Sincronización de métricas generales cada 60 segundos
   useEffect(() => {
-    if (!stats || !hostname) return;
+    if (!hostname) return;
 
-    // Sincronizar cada 60 segundos
     const interval = setInterval(() => {
-      saveMetrics(hostname, stats).catch(console.error);
+      if (statsRef.current) {
+        saveMetrics(hostname, statsRef.current)
+          .then(() => console.log("Métricas sincronizadas con Firebase"))
+          .catch(console.error);
+      }
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [stats, hostname]);
+  }, [hostname]);
 }

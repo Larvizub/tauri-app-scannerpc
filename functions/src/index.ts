@@ -93,6 +93,27 @@ export const getCriticalHistory = functions.runWith({ secrets: ["FUNCTIONS_API_K
 });
 
 /**
+ * Endpoint para listar todos los dispositivos (usuarios) registrados.
+ */
+export const listDevices = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {
+  const authResult = await authenticateRequest(req);
+  if (!authResult) {
+    res.status(401).send("No autorizado");
+    return;
+  }
+
+  try {
+    const snapshot = await admin.database()
+      .ref("devices")
+      .once("value");
+
+    res.status(200).json(snapshot.val());
+  } catch (error) {
+    res.status(500).send("Error al obtener lista de dispositivos");
+  }
+});
+
+/**
  * Endpoint para enviar alertas externas.
  */
 export const postExternalAlert = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {

@@ -69,7 +69,21 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 }
 ```
 
-### 4. Enviar Alerta Externa
+### 4. Listar dispositivos (Usuarios)
+`GET /listDevices`
+
+**Respuesta (200 OK):**
+```json
+{
+  "MacBook-Luis": {
+    "hostname": "MacBook-Luis",
+    "lastSeen": 1674384000000,
+    "os": "darwin"
+  }
+}
+```
+
+### 5. Enviar Alerta Externa
 `POST /postExternalAlert`
 
 **Body:**
