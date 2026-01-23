@@ -3,18 +3,61 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
-import { Bell, ShieldAlert, Cpu, Zap } from 'lucide-react'
-import { useState } from 'react'
+import { Bell, ShieldAlert, Cpu, Zap, Save } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import { saveConfig, getConfig } from '@/lib/firebase'
 
 export default function Alerts() {
   const [cpuThreshold, setCpuThreshold] = useState(90)
   const [ramThreshold, setRamThreshold] = useState(90)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [hostname, setHostname] = useState<string>("")
+
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const name = await invoke<string>("get_hostname")
+        setHostname(name)
+        const config = await getConfig(name)
+        if (config) {
+          setCpuThreshold(config.cpuThreshold || 90)
+          setRamThreshold(config.ramThreshold || 90)
+        }
+      } catch (error) {
+        console.error("Error loading config:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadConfig()
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await saveConfig(hostname, { cpuThreshold, ramThreshold })
+    } catch (error) {
+      console.error("Error saving config:", error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="p-8">Cargando configuración...</div>
 
   return (
     <div className='p-8 space-y-6 max-w-4xl mx-auto'>
-      <div>
-        <h1 className='text-3xl font-bold tracking-tight'>Módulo de Alertas</h1>
-        <p className='text-muted-foreground'>Configura las notificaciones para eventos críticos del sistema.</p>
+      <div className='flex justify-between items-center'>
+        <div>
+          <h1 className='text-3xl font-bold tracking-tight'>Módulo de Alertas</h1>
+          <p className='text-muted-foreground'>Configura las notificaciones para el equipo: <span className="font-mono text-primary">{hostname}</span></p>
+        </div>
+        <Button onClick={handleSave} disabled={saving} className="gap-2">
+          <Save className="h-4 w-4" />
+          {saving ? 'Guardando...' : 'Guardar Cambios'}
+        </Button>
       </div>
 
       <div className='grid gap-6'>

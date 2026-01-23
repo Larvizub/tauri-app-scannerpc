@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, push, set } from "firebase/database";
+import { getDatabase, ref, push, set, get } from "firebase/database";
 import { getAuth, signInAnonymously } from "firebase/auth";
 
 const firebaseConfig = {
@@ -33,4 +33,20 @@ export async function saveMetrics(deviceId: string, stats: any) {
     ...stats,
     timestamp: Date.now()
   });
+}
+/**
+ * Guarda la configuración del equipo.
+ */
+export async function saveConfig(deviceId: string, config: any) {
+  const configRef = ref(db, `configs/${deviceId}`);
+  await set(configRef, config);
+}
+
+/**
+ * Obtiene la configuración del equipo.
+ */
+export async function getConfig(deviceId: string) {
+  const configRef = ref(db, `configs/${deviceId}`);
+  const snapshot = await get(configRef);
+  return snapshot.val();
 }

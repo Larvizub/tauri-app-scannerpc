@@ -70,12 +70,18 @@ fn get_system_stats(state: tauri::State<'_, AppState>) -> SystemStats {
     get_stats(&mut sys)
 }
 
+#[tauri::command]
+fn get_hostname() -> String {
+    System::host_name().unwrap_or_else(|| "Unknown-PC".to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState {
             sys: Mutex::new(System::new_all()),
         })
+        .invoke_handler(tauri::generate_handler![get_system_stats, get_hostname])
         .setup(|app| {
             let handle = app.handle().clone();
             thread::spawn(move || {
