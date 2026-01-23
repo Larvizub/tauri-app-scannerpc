@@ -2,6 +2,34 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, ref, push, set, get } from "firebase/database";
 import { getAuth, signInAnonymously } from "firebase/auth";
 
+interface SystemStats {
+  cpu_usage: number;
+  memory_usage_pct: number;
+  used_memory: number;
+  total_memory: number;
+  network_rx: number;
+  network_rx_bps?: number;
+  disks: DiskInfo[];
+}
+
+interface DiskInfo {
+  name: string;
+  total_space: number;
+  used_space: number;
+}
+
+interface AppInfo {
+  name: string;
+  version?: string;
+  path?: string;
+}
+
+interface CriticalEvent {
+  type: string;
+  details: string;
+  timestamp?: number;
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
@@ -26,7 +54,7 @@ export const loginAnonymously = () => signInAnonymously(auth);
  */
 export const getIdToken = () => auth.currentUser?.getIdToken();
 
-export async function saveMetrics(deviceId: string, stats: any) {
+export async function saveMetrics(deviceId: string, stats: SystemStats) {
   const metricsRef = ref(db, `metrics/${deviceId}/${new Date().toISOString().split('T')[0]}`);
   const newMetricRef = push(metricsRef);
   await set(newMetricRef, {
@@ -38,7 +66,7 @@ export async function saveMetrics(deviceId: string, stats: any) {
 /**
  * Guarda el listado de aplicaciones instaladas.
  */
-export async function saveInstalledApps(deviceId: string, apps: any[]) {
+export async function saveInstalledApps(deviceId: string, apps: AppInfo[]) {
   const appsRef = ref(db, `installed_apps/${deviceId}`);
   await set(appsRef, {
     apps,
@@ -49,7 +77,7 @@ export async function saveInstalledApps(deviceId: string, apps: any[]) {
 /**
  * Guarda un evento crítico de rendimiento.
  */
-export async function saveCriticalEvent(deviceId: string, event: any) {
+export async function saveCriticalEvent(deviceId: string, event: CriticalEvent) {
   const eventsRef = ref(db, `critical_history/${deviceId}`);
   const newEventRef = push(eventsRef);
   await set(newEventRef, {
@@ -61,7 +89,7 @@ export async function saveCriticalEvent(deviceId: string, event: any) {
 /**
  * Guarda la configuración del equipo.
  */
-export async function saveConfig(deviceId: string, config: any) {
+export async function saveConfig(deviceId: string, config: Record<string, unknown>) {
   const configRef = ref(db, `configs/${deviceId}`);
   await set(configRef, config);
 }
