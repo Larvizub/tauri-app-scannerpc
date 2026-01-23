@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "ScannerPC - Monitor de Sistema",
         "width": 1024,
         "height": 768
