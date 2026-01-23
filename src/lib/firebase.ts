@@ -34,6 +34,18 @@ export async function saveMetrics(deviceId: string, stats: any) {
     timestamp: Date.now()
   });
 }
+
+/**
+ * Guarda el listado de aplicaciones instaladas.
+ */
+export async function saveInstalledApps(deviceId: string, apps: any[]) {
+  const appsRef = ref(db, `installed_apps/${deviceId}`);
+  await set(appsRef, {
+    apps,
+    lastUpdate: Date.now()
+  });
+}
+
 /**
  * Guarda la configuración del equipo.
  */

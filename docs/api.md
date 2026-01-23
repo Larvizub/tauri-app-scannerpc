@@ -11,7 +11,7 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 `GET /getLatestMetrics?deviceId={deviceId}`
 
 **Parámetros:**
-- `deviceId` (string): Identificador único de la computadora.
+- `deviceId` (string): Identificador único de la computadora (hostname).
 
 **Respuesta (200 OK):**
 ```json
@@ -19,13 +19,38 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
   "-Nxyz...": {
     "cpu_usage": 45.2,
     "memory_usage_pct": 60.1,
-    "timestamp": 1674384000000,
-    ...
+    "total_memory": 17179869184,
+    "used_memory": 8589934592,
+    "network_rx": 1024556,
+    "network_tx": 512223,
+    "network_rx_bps": 12500.5,
+    "network_tx_bps": 5000.2,
+    "disks": [
+      { "name": "/", "total": 500000000, "available": 200000000 }
+    ],
+    "timestamp": 1674384000000
   }
 }
 ```
 
-### 2. Enviar Alerta Externa
+### 2. Obtener aplicaciones instaladas
+`GET /getInstalledApps?deviceId={deviceId}`
+
+**Parámetros:**
+- `deviceId` (string): Identificador único de la computadora (hostname).
+
+**Respuesta (200 OK):**
+```json
+{
+  "apps": [
+    { "name": "Visual Studio Code", "version": "N/A" },
+    { "name": "Spotify", "version": "N/A" }
+  ],
+  "lastUpdate": 1674384000000
+}
+```
+
+### 3. Enviar Alerta Externa
 `POST /postExternalAlert`
 
 **Body:**

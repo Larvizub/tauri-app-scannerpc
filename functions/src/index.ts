@@ -35,6 +35,34 @@ export const getLatestMetrics = functions.runWith({ secrets: ["FUNCTIONS_API_KEY
 });
 
 /**
+ * Endpoint para obtener las aplicaciones instaladas de un dispositivo.
+ */
+export const getInstalledApps = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {
+  const deviceId = req.query.deviceId as string;
+
+  if (!deviceId) {
+    res.status(400).send("Falta deviceId");
+    return;
+  }
+
+  const authResult = await authenticateRequest(req);
+  if (!authResult) {
+    res.status(401).send("No autorizado");
+    return;
+  }
+
+  try {
+    const snapshot = await admin.database()
+      .ref(`installed_apps/${deviceId}`)
+      .once("value");
+
+    res.status(200).json(snapshot.val());
+  } catch (error) {
+    res.status(500).send("Error al obtener aplicaciones");
+  }
+});
+
+/**
  * Endpoint para enviar alertas externas.
  */
 export const postExternalAlert = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {

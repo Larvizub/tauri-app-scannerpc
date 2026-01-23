@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTelemetry } from "@/lib/telemetry";
-import { saveMetrics, loginAnonymously } from "@/lib/firebase";
+import { saveMetrics, loginAnonymously, saveInstalledApps } from "@/lib/firebase";
 import { invoke } from "@tauri-apps/api/core";
 
 export function useFirebaseSync() {
@@ -11,8 +11,17 @@ export function useFirebaseSync() {
     // Autenticar automáticamente al iniciar la app
     loginAnonymously().catch(console.error);
 
-    // Obtener el nombre del equipo desde Rust
-    invoke<string>("get_hostname").then(setHostname).catch(console.error);
+    // Obtener el nombre del equipo y sincronizar apps
+    invoke<string>("get_hostname").then((name) => {
+      setHostname(name);
+      
+      // Sincronizar aplicaciones instaladas una vez al iniciar
+      invoke<any[]>("get_installed_apps")
+        .then((apps) => {
+          saveInstalledApps(name, apps).catch(console.error);
+        })
+        .catch(console.error);
+    }).catch(console.error);
   }, []);
 
   useEffect(() => {
