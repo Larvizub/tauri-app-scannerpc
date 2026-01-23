@@ -6,11 +6,27 @@ import Reports from '@/pages/Reports'
 import Apps from '@/pages/Apps'
 import CriticalHistory from '@/pages/CriticalHistory'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard, Bell, FileBarChart, Package, AlertOctagon } from 'lucide-react'
+import { Bell, FileBarChart, Package, AlertOctagon, LayoutDashboard } from 'lucide-react'
 import { useFirebaseSync } from '@/hooks/useFirebaseSync'
+import { useEffect } from 'react'
+import { enable, isEnabled } from '@tauri-apps/plugin-autostart'
 
 function App() {
   useFirebaseSync()
+
+  useEffect(() => {
+    const initAutostart = async () => {
+      try {
+        if (!(await isEnabled())) {
+          await enable()
+          console.log('Autostart enabled')
+        }
+      } catch (err) {
+        console.error('Failed to enable autostart:', err)
+      }
+    }
+    initAutostart()
+  }, [])
 
   return (
     <ThemeProvider defaultTheme='system' storageKey='scannerpc-theme'>

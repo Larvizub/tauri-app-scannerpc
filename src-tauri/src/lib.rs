@@ -7,6 +7,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use std::thread;
 use std::time::Duration;
 use std::process::Command;
+use tauri_plugin_autostart::MacosLauncher;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SystemStats {
@@ -70,6 +71,31 @@ fn get_macos_network_stats() -> (u64, u64) {
     (0, 0)
 }
 
+fn get_windows_network_stats() -> (u64, u64) {
+    let output = Command::new("powershell")
+        .args(&["-Command", "Get-NetAdapterStatistics | Select-Object ReceivedBytes, SentBytes | ConvertTo-Json"])
+        .output();
+
+    if let Ok(out) = output {
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&stdout) {
+            let mut total_rx = 0;
+            let mut total_tx = 0;
+            if let Some(arr) = json.as_array() {
+                for item in arr {
+                    total_rx += item["ReceivedBytes"].as_u64().unwrap_or(0);
+                    total_tx += item["SentBytes"].as_u64().unwrap_or(0);
+                }
+            } else {
+                total_rx += json["ReceivedBytes"].as_u64().unwrap_or(0);
+                total_tx += json["SentBytes"].as_u64().unwrap_or(0);
+            }
+            return (total_rx, total_tx);
+        }
+    }
+    (0, 0)
+}
+
 fn get_stats(sys: &mut System) -> SystemStats {
     sys.refresh_cpu_all();
     sys.refresh_memory();
@@ -100,6 +126,15 @@ fn get_stats(sys: &mut System) -> SystemStats {
         if mac_rx > 0 {
             network_rx = mac_rx;
             network_tx = mac_tx;
+        }
+    }
+
+    // Fallback para Windows si sysinfo no reporta datos
+    if network_rx == 0 && cfg!(target_os = "windows") {
+        let (win_rx, win_tx) = get_windows_network_stats();
+        if win_rx > 0 {
+            network_rx = win_rx;
+            network_tx = win_tx;
         }
     }
 
@@ -151,11 +186,30 @@ fn get_installed_apps() -> Vec<AppInfo> {
 
     #[cfg(target_os = "windows")]
     {
-        // En Windows se podría usar powershell o el registro, por ahora una lista simple
         let output = Command::new("powershell")
-            .args(&["-Command", "Get-ItemProperty HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName | ConvertTo-Json"])
+            .args(&["-Command", "Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*, HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*, HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Where-Object { $_.DisplayName -ne $null } | Select-Object DisplayName, DisplayVersion | ConvertTo-Json"])
             .output();
-        // ... lógica adicional según necesidad
+
+        if let Ok(out) = output {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&stdout) {
+                if let Some(arr) = json.as_array() {
+                    for item in arr {
+                        if let Some(name) = item["DisplayName"].as_str() {
+                            apps.push(AppInfo {
+                                name: name.to_string(),
+                                version: item["DisplayVersion"].as_str().unwrap_or("N/A").to_string(),
+                            });
+                        }
+                    }
+                } else if let Some(name) = json["DisplayName"].as_str() {
+                    apps.push(AppInfo {
+                        name: name.to_string(),
+                        version: json["DisplayVersion"].as_str().unwrap_or("N/A").to_string(),
+                    });
+                }
+            }
+        }
     }
 
     #[cfg(target_os = "linux")]
@@ -173,7 +227,7 @@ fn get_installed_apps() -> Vec<AppInfo> {
         }
     }
 
-    apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    apps.sort_by(|a: &AppInfo, b: &AppInfo| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     apps
 }
 
@@ -259,6 +313,7 @@ pub fn run() {
             }
             _ => {}
         })
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--minimized"])))
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
