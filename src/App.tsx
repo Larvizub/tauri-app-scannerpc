@@ -3,8 +3,9 @@ import { ThemeProvider } from '@/components/theme-provider'
 import Dashboard from '@/pages/Dashboard'
 import Alerts from '@/pages/Alerts'
 import Reports from '@/pages/Reports'
+import Apps from '@/pages/Apps'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard, Bell, FileBarChart } from 'lucide-react'
+import { LayoutDashboard, Bell, FileBarChart, Package } from 'lucide-react'
 import { useFirebaseSync } from '@/hooks/useFirebaseSync'
 
 function App() {
@@ -37,6 +38,12 @@ function App() {
                   Reportes
                 </Button>
               </Link>
+              <Link to='/apps'>
+                <Button variant='ghost' className='w-full justify-start gap-2'>
+                  <Package className='h-4 w-4' />
+                  Aplicaciones
+                </Button>
+              </Link>
             </nav>
           </aside>
           <main className='flex-1 overflow-auto'>
@@ -44,6 +51,7 @@ function App() {
               <Route path='/' element={<Dashboard />} />
               <Route path='/alerts' element={<Alerts />} />
               <Route path='/reports' element={<Reports />} />
+              <Route path='/apps' element={<Apps />} />
             </Routes>
           </main>
         </div>

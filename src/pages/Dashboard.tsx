@@ -100,8 +100,25 @@ export default function Dashboard() {
             <Network className='h-4 w-4 text-blue-500' />
           </CardHeader>
           <CardContent>
-            <div className='text-3xl font-bold'>{(stats.network_rx / 1024 / 1024).toFixed(2)}</div>
-            <p className='text-xs text-muted-foreground mt-2'>MB totales recibidos</p>
+            {(() => {
+              const bytes = stats.network_rx;
+              const mb = bytes / 1024 / 1024;
+              const kb = bytes / 1024;
+              const display = mb >= 1 ? `${mb.toFixed(2)} MB` : `${kb.toFixed(2)} KB`;
+              return (
+                <>
+                  <div className='text-3xl font-bold'>{display}</div>
+                  <p className='text-xs text-muted-foreground mt-2'>Total recibido</p>
+                  {(() => {
+                    const bps = stats.network_rx_bps || 0;
+                    const mbps = bps / 1024 / 1024;
+                    const kbps = bps / 1024;
+                    const speed = mbps >= 1 ? `${mbps.toFixed(2)} MB/s` : kbps >= 1 ? `${kbps.toFixed(2)} KB/s` : `${bps.toFixed(0)} B/s`;
+                    return <p className='text-xs text-muted-foreground mt-1'>Velocidad: {speed}</p>
+                  })()}
+                </>
+              )
+            })()}
           </CardContent>
         </Card>
 

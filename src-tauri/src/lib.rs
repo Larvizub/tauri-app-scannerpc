@@ -6,6 +6,7 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use std::thread;
 use std::time::Duration;
+use std::process::Command;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SystemStats {
@@ -16,6 +17,8 @@ struct SystemStats {
     disks: Vec<DiskInfo>,
     network_rx: u64,
     network_tx: u64,
+    network_rx_bps: f64,
+    network_tx_bps: f64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -25,8 +28,46 @@ struct DiskInfo {
     available: u64,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct AppInfo {
+    name: String,
+    version: String,
+}
+
 struct AppState {
     sys: Mutex<System>,
+}
+
+fn get_macos_network_stats() -> (u64, u64) {
+    let output = Command::new("netstat")
+        .args(&["-i", "-b", "-n"])
+        .output();
+
+    if let Ok(out) = output {
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        let mut total_rx = 0;
+        let mut total_tx = 0;
+
+        for line in stdout.lines().skip(1) {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            // macOS netstat -ib -n layout usually has 11 columns if Address is present
+            // Name Mtu Network Address Ipkts Ierrs Ibytes Opkts Oerrs Obytes Coll
+            // 0    1   2       3       4     5     6      7     8     9      10
+            if parts.len() >= 10 {
+                // If the 3rd column starts with <Link#, it's the physical interface stats
+                if parts[2].starts_with("<Link#") {
+                    if let Ok(rx) = parts[6].parse::<u64>() {
+                        total_rx += rx;
+                    }
+                    if let Ok(tx) = parts[9].parse::<u64>() {
+                        total_tx += tx;
+                    }
+                }
+            }
+        }
+        return (total_rx, total_tx);
+    }
+    (0, 0)
 }
 
 fn get_stats(sys: &mut System) -> SystemStats {
@@ -53,6 +94,16 @@ fn get_stats(sys: &mut System) -> SystemStats {
         network_tx += data.transmitted();
     }
 
+    // Fallback para macOS si sysinfo no reporta datos
+    if network_rx == 0 && cfg!(target_os = "macos") {
+        let (mac_rx, mac_tx) = get_macos_network_stats();
+        if mac_rx > 0 {
+            println!("DEBUG: Using macos netstat fallback: rx={}, tx={}", mac_rx, mac_tx);
+            network_rx = mac_rx;
+            network_tx = mac_tx;
+        }
+    }
+
     SystemStats {
         cpu_usage,
         memory_usage_pct,
@@ -61,6 +112,8 @@ fn get_stats(sys: &mut System) -> SystemStats {
         disks,
         network_rx,
         network_tx,
+        network_rx_bps: 0.0,
+        network_tx_bps: 0.0,
     }
 }
 
@@ -75,20 +128,92 @@ fn get_hostname() -> String {
     System::host_name().unwrap_or_else(|| "Unknown-PC".to_string())
 }
 
+#[tauri::command]
+fn get_installed_apps() -> Vec<AppInfo> {
+    let mut apps = Vec::new();
+
+    #[cfg(target_os = "macos")]
+    {
+        let paths = ["/Applications", "/System/Applications"];
+        for path in paths {
+            if let Ok(entries) = std::fs::read_dir(path) {
+                for entry in entries.flatten() {
+                    let name = entry.file_name().to_string_lossy().into_owned();
+                    if name.ends_with(".app") {
+                        apps.push(AppInfo {
+                            name: name.replace(".app", ""),
+                            version: "N/A".to_string(), // Para versión real en macOS se requiere leer Info.plist
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // En Windows se podría usar powershell o el registro, por ahora una lista simple
+        let output = Command::new("powershell")
+            .args(&["-Command", "Get-ItemProperty HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName | ConvertTo-Json"])
+            .output();
+        // ... lógica adicional según necesidad
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(entries) = std::fs::read_dir("/usr/share/applications") {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().into_owned();
+                if name.ends_with(".desktop") {
+                    apps.push(AppInfo {
+                        name: name.replace(".desktop", ""),
+                        version: "N/A".to_string(),
+                    });
+                }
+            }
+        }
+    }
+
+    apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    apps
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState {
             sys: Mutex::new(System::new_all()),
         })
-        .invoke_handler(tauri::generate_handler![get_system_stats, get_hostname])
+        .invoke_handler(tauri::generate_handler![get_system_stats, get_hostname, get_installed_apps])
         .setup(|app| {
             let handle = app.handle().clone();
             thread::spawn(move || {
                 let mut sys = System::new_all();
+                let mut prev_stats: Option<SystemStats> = None;
+                let mut prev_instant = std::time::Instant::now();
                 loop {
                     let stats = get_stats(&mut sys);
-                    let _ = handle.emit("system-stats", stats);
+                    let now = std::time::Instant::now();
+                    let elapsed = now.duration_since(prev_instant).as_secs_f64();
+
+                    let mut stats_out = stats.clone();
+                    if let Some(prev) = &prev_stats {
+                        let rx_delta = stats.network_rx.saturating_sub(prev.network_rx) as f64;
+                        let tx_delta = stats.network_tx.saturating_sub(prev.network_tx) as f64;
+                        if elapsed > 0.0 {
+                            stats_out.network_rx_bps = rx_delta / elapsed;
+                            stats_out.network_tx_bps = tx_delta / elapsed;
+                        }
+                    }
+
+                    // Debug: print totals and bps
+                    println!("DEBUG system-stats network_rx={} network_tx={} rx_bps={} tx_bps={}",
+                        stats_out.network_rx, stats_out.network_tx, stats_out.network_rx_bps, stats_out.network_tx_bps);
+
+                    prev_stats = Some(stats_out.clone());
+                    prev_instant = now;
+
+                    let _ = handle.emit("system-stats", stats_out);
                     thread::sleep(Duration::from_secs(2));
                 }
             });
@@ -140,7 +265,6 @@ pub fn run() {
             _ => {}
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_system_stats])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
