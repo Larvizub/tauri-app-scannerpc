@@ -107,7 +107,7 @@ export default function CriticalHistory() {
   })).filter(d => d.count > 0 || d.name === "CPU");
 
   // Data for Timeline Chart
-  const timelineData = events.reduce((acc: any[], event) => {
+  const timelineData = events.reduce((acc: { name: string; total: number }[], event) => {
     const date = new Date(event.timestamp).toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
     const existing = acc.find(item => item.name === date);
     if (existing) {

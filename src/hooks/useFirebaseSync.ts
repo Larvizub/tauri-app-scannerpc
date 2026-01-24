@@ -36,8 +36,8 @@ export function useFirebaseSync() {
         await registerDevice(name);
         
         // 4. Sincronizar aplicaciones instaladas una vez al iniciar
-        const apps = await invoke<any[]>("get_installed_apps");
-        await saveInstalledApps(name, apps);
+        const apps = await invoke<unknown[]>("get_installed_apps");
+        await saveInstalledApps(name, apps as { name: string; version?: string; path?: string }[]);
         
         console.log(`Sincronización inicial completada para: ${name}`);
       } catch (error) {
@@ -61,7 +61,7 @@ export function useFirebaseSync() {
       if (now - lastSavedTime > 300000) { // 5 minutos
         saveCriticalEvent(hostname, event)
           .then(() => console.log(`Evento crítico guardado: ${event.type}`))
-          .catch(console.error);
+          .catch((err: unknown) => console.error("Error al guardar evento crítico:", err));
         lastEventSaved.current[event.type] = now;
       }
     });
@@ -75,7 +75,7 @@ export function useFirebaseSync() {
       if (statsRef.current) {
         saveMetrics(hostname, statsRef.current)
           .then(() => console.log("Métricas sincronizadas con Firebase"))
-          .catch(console.error);
+          .catch((err: unknown) => console.error("Error al sincronizar métricas:", err));
       }
     }, 60000);
 

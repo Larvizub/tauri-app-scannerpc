@@ -1,33 +1,13 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, push, set, get } from "firebase/database";
 import { getAuth, signInAnonymously } from "firebase/auth";
-
-interface SystemStats {
-  cpu_usage: number;
-  memory_usage_pct: number;
-  used_memory: number;
-  total_memory: number;
-  network_rx: number;
-  network_rx_bps?: number;
-  disks: DiskInfo[];
-}
-
-interface DiskInfo {
-  name: string;
-  total_space: number;
-  used_space: number;
-}
+import { SystemStats } from "./telemetry";
+import { CriticalEvent } from "./healthRules";
 
 interface AppInfo {
   name: string;
   version?: string;
   path?: string;
-}
-
-interface CriticalEvent {
-  type: string;
-  details: string;
-  timestamp?: number;
 }
 
 const firebaseConfig = {

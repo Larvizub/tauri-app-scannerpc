@@ -6,7 +6,7 @@ admin.initializeApp();
 /**
  * Endpoint para obtener las últimas métricas de un dispositivo.
  */
-export const getLatestMetrics = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {
+export const getLatestMetrics = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
   const deviceId = req.query.deviceId as string;
 
   if (!deviceId) {
@@ -29,7 +29,8 @@ export const getLatestMetrics = functions.runWith({ secrets: ["FUNCTIONS_API_KEY
       .once("value");
 
     res.status(200).json(snapshot.val());
-  } catch (error) {
+  } catch (_error) {
+    console.error("Error al obtener datos:", _error);
     res.status(500).send("Error al obtener datos");
   }
 });
@@ -37,7 +38,7 @@ export const getLatestMetrics = functions.runWith({ secrets: ["FUNCTIONS_API_KEY
 /**
  * Endpoint para obtener las aplicaciones instaladas de un dispositivo.
  */
-export const getInstalledApps = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {
+export const getInstalledApps = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
   const deviceId = req.query.deviceId as string;
 
   if (!deviceId) {
@@ -57,7 +58,8 @@ export const getInstalledApps = functions.runWith({ secrets: ["FUNCTIONS_API_KEY
       .once("value");
 
     res.status(200).json(snapshot.val());
-  } catch (error) {
+  } catch (_error) {
+    console.error("Error al obtener aplicaciones:", _error);
     res.status(500).send("Error al obtener aplicaciones");
   }
 });
@@ -65,7 +67,7 @@ export const getInstalledApps = functions.runWith({ secrets: ["FUNCTIONS_API_KEY
 /**
  * Endpoint para obtener el historial crítico de un dispositivo.
  */
-export const getCriticalHistory = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {
+export const getCriticalHistory = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
   const deviceId = req.query.deviceId as string;
 
   if (!deviceId) {
@@ -87,7 +89,8 @@ export const getCriticalHistory = functions.runWith({ secrets: ["FUNCTIONS_API_K
       .once("value");
 
     res.status(200).json(snapshot.val());
-  } catch (error) {
+  } catch (_error) {
+    console.error("Error al obtener historial crítico:", _error);
     res.status(500).send("Error al obtener historial crítico");
   }
 });
@@ -95,7 +98,7 @@ export const getCriticalHistory = functions.runWith({ secrets: ["FUNCTIONS_API_K
 /**
  * Endpoint para listar todos los dispositivos (usuarios) registrados.
  */
-export const listDevices = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {
+export const listDevices = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
   const authResult = await authenticateRequest(req);
   if (!authResult) {
     res.status(401).send("No autorizado");
@@ -108,7 +111,8 @@ export const listDevices = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] })
       .once("value");
 
     res.status(200).json(snapshot.val());
-  } catch (error) {
+  } catch (_error) {
+    console.error("Error al obtener lista de dispositivos:", _error);
     res.status(500).send("Error al obtener lista de dispositivos");
   }
 });
@@ -116,7 +120,7 @@ export const listDevices = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] })
 /**
  * Endpoint para enviar alertas externas.
  */
-export const postExternalAlert = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: any) => {
+export const postExternalAlert = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
   if (req.method !== "POST") {
     res.status(405).send("Método no permitido");
     return;
@@ -144,7 +148,8 @@ export const postExternalAlert = functions.runWith({ secrets: ["FUNCTIONS_API_KE
     });
 
     res.status(200).send("Alerta registrada");
-  } catch (error) {
+  } catch (_error) {
+    console.error("Error al guardar alerta:", _error);
     res.status(500).send("Error al guardar alerta");
   }
 });
@@ -160,7 +165,8 @@ async function authenticateRequest(req: functions.https.Request) {
     try {
       const decoded = await admin.auth().verifyIdToken(idToken);
       return { uid: decoded.uid };
-    } catch (err) {
+    } catch (_err) {
+      console.error("Error al verificar token:", _err);
       return null;
     }
   }
