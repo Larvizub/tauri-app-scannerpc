@@ -7,7 +7,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use std::thread;
 use std::time::Duration;
 use std::process::Command;
-use tauri_plugin_autostart::MacosLauncher;
+use tauri_plugin_autostart::{ManagerExt, MacosLauncher};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SystemStats {
@@ -302,6 +302,9 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // Habilitar auto-inicio
+            let _ = app.autolaunch().enable();
 
             Ok(())
         })
