@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use sysinfo::{System, Disks, Networks};
+use sysinfo::{System, Disks, Networks, ProcessesToUpdate};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 use tauri::menu::{Menu, MenuItem};
@@ -33,6 +33,15 @@ struct DiskInfo {
 struct AppInfo {
     name: String,
     version: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct RunningProcessInfo {
+    pid: String,
+    name: String,
+    cpu_usage: f32,
+    memory_bytes: u64,
+    status: String,
 }
 
 struct AppState {
@@ -231,13 +240,43 @@ fn get_installed_apps() -> Vec<AppInfo> {
     apps
 }
 
+#[tauri::command]
+fn get_running_processes() -> Vec<RunningProcessInfo> {
+    let mut sys = System::new_all();
+    sys.refresh_processes(ProcessesToUpdate::All, true);
+
+    let mut processes: Vec<RunningProcessInfo> = sys
+        .processes()
+        .iter()
+        .map(|(pid, process)| RunningProcessInfo {
+            pid: pid.to_string(),
+            name: process.name().to_string_lossy().to_string(),
+            cpu_usage: process.cpu_usage(),
+            memory_bytes: process.memory(),
+            status: format!("{:?}", process.status()),
+        })
+        .collect();
+
+    processes.sort_by(|a, b| {
+        b.cpu_usage
+            .partial_cmp(&a.cpu_usage)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    processes
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState {
             sys: Mutex::new(System::new_all()),
         })
-        .invoke_handler(tauri::generate_handler![get_system_stats, get_hostname, get_installed_apps])
+        .invoke_handler(tauri::generate_handler![
+            get_system_stats,
+            get_hostname,
+            get_installed_apps,
+            get_running_processes
+        ])
         .setup(|app| {
             let handle = app.handle().clone();
             thread::spawn(move || {
