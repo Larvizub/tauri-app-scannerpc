@@ -5,8 +5,9 @@ import Alerts from '@/pages/Alerts'
 import Reports from '@/pages/Reports'
 import Apps from '@/pages/Apps'
 import CriticalHistory from '@/pages/CriticalHistory'
+import Execution from '@/pages/Execution'
 import { Button } from '@/components/ui/button'
-import { Bell, FileBarChart, Package, AlertOctagon, LayoutDashboard } from 'lucide-react'
+import { Bell, FileBarChart, Package, AlertOctagon, LayoutDashboard, Activity } from 'lucide-react'
 import { useFirebaseSync } from '@/hooks/useFirebaseSync'
 import { useEffect } from 'react'
 import { enable, isEnabled } from '@tauri-apps/plugin-autostart'
@@ -61,6 +62,12 @@ function App() {
                   Aplicaciones
                 </Button>
               </Link>
+              <Link to='/execution'>
+                <Button variant='ghost' className='w-full justify-start gap-2'>
+                  <Activity className='h-4 w-4' />
+                  Ejecución
+                </Button>
+              </Link>
               <Link to='/critical-history'>
                 <Button variant='ghost' className='w-full justify-start gap-2 text-red-500 hover:text-red-600 hover:bg-red-500/10'>
                   <AlertOctagon className='h-4 w-4' />
@@ -75,6 +82,7 @@ function App() {
               <Route path='/alerts' element={<Alerts />} />
               <Route path='/reports' element={<Reports />} />
               <Route path='/apps' element={<Apps />} />
+              <Route path='/execution' element={<Execution />} />
               <Route path='/critical-history' element={<CriticalHistory />} />
             </Routes>
           </main>
