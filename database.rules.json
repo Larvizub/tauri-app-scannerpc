@@ -6,6 +6,11 @@
       "$device_id": {
         ".indexOn": ["timestamp"]
       }
+    },
+    "running_processes": {
+      "$device_id": {
+        ".indexOn": ["lastUpdate"]
+      }
     }
   }
 }

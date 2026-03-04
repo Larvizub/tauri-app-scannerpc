@@ -6,10 +6,11 @@ ScannerPC es una aplicación de escritorio multiplataforma (Windows, macOS, Linu
 
 - **Dashboard en Tiempo Real:** Visualización de uso de CPU, Memoria RAM, Almacenamiento y Red (con cálculo de velocidad de transferencia en macOS mediante netstat fallback).
 - **Inventario de Aplicaciones:** Listado completo de las aplicaciones instaladas en el sistema.
+- **Monitor de Ejecución:** Vista en tiempo real de programas/procesos en ejecución (PID, CPU, RAM y estado).
 - **Identidad sin Contraseña:** La aplicación utiliza el nombre del equipo (`hostname`) como identificador único para sincronizar configuraciones y métricas de forma anónima pero persistente.
 - **Alertas Configurables:** Módulo para establecer umbrales de rendimiento y recibir notificaciones.
 - **Sincronización Cloud:** Persistencia de datos en Firebase Realtime Database para análisis histórico.
-- **API Externa:** Endpoints disponibles a través de Firebase Functions para consultar datos desde aplicaciones web externas con autenticación mediante API Key o Bearer Token.
+- **API Externa:** Endpoints disponibles a través de Firebase Functions para consultar y actualizar datos desde aplicaciones web externas (incluye aplicaciones instaladas y programas en ejecución) con autenticación mediante API Key o Bearer Token.
 
 ## Requisitos Previos
 

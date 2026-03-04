@@ -4,6 +4,7 @@ import {
   saveMetrics, 
   loginAnonymously, 
   saveInstalledApps, 
+  saveRunningProcesses,
   saveCriticalEvent,
   registerDevice 
 } from "@/lib/firebase";
@@ -77,6 +78,11 @@ export function useFirebaseSync() {
           .then(() => console.log("Métricas sincronizadas con Firebase"))
           .catch((err: unknown) => console.error("Error al sincronizar métricas:", err));
       }
+
+      invoke<Array<{ pid: string; name: string; cpu_usage?: number; memory_bytes?: number; status?: string }>>("get_running_processes")
+        .then((processes) => saveRunningProcesses(hostname, processes.slice(0, 150)))
+        .then(() => console.log("Procesos en ejecución sincronizados con Firebase"))
+        .catch((err: unknown) => console.error("Error al sincronizar procesos en ejecución:", err));
     }, 60000);
 
     return () => clearInterval(interval);

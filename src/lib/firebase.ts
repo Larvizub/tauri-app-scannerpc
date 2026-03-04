@@ -10,6 +10,14 @@ interface AppInfo {
   path?: string;
 }
 
+interface RunningProcessInfo {
+  pid: string;
+  name: string;
+  cpu_usage?: number;
+  memory_bytes?: number;
+  status?: string;
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
@@ -50,6 +58,17 @@ export async function saveInstalledApps(deviceId: string, apps: AppInfo[]) {
   const appsRef = ref(db, `installed_apps/${deviceId}`);
   await set(appsRef, {
     apps,
+    lastUpdate: Date.now()
+  });
+}
+
+/**
+ * Guarda el listado de programas en ejecución.
+ */
+export async function saveRunningProcesses(deviceId: string, processes: RunningProcessInfo[]) {
+  const processesRef = ref(db, `running_processes/${deviceId}`);
+  await set(processesRef, {
+    processes,
     lastUpdate: Date.now()
   });
 }

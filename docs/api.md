@@ -50,7 +50,37 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 }
 ```
 
-### 3. Obtener Historial Crítico
+### 3. Obtener programas en ejecución
+`GET /getRunningProcesses?deviceId={deviceId}`
+
+**Parámetros:**
+- `deviceId` (string): Identificador único de la computadora (hostname).
+
+**Respuesta (200 OK):**
+```json
+{
+  "processes": [
+    {
+      "pid": "1287",
+      "name": "Google Chrome",
+      "cpu_usage": 14.3,
+      "memory_bytes": 524288000,
+      "status": "Run"
+    },
+    {
+      "pid": "451",
+      "name": "Finder",
+      "cpu_usage": 1.2,
+      "memory_bytes": 123731968,
+      "status": "Sleep"
+    }
+  ],
+  "lastUpdate": 1674384000000,
+  "source": "user:abc123"
+}
+```
+
+### 4. Obtener Historial Crítico
 `GET /getCriticalHistory?deviceId={deviceId}`
 
 **Parámetros:**
@@ -69,7 +99,7 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 }
 ```
 
-### 4. Listar dispositivos (Usuarios)
+### 5. Listar dispositivos (Usuarios)
 `GET /listDevices`
 
 **Respuesta (200 OK):**
@@ -83,7 +113,7 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 }
 ```
 
-### 5. Enviar Alerta Externa
+### 6. Enviar Alerta Externa
 `POST /postExternalAlert`
 
 **Body:**
@@ -97,6 +127,35 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 
 **Respuesta (200 OK):**
 `Alerta registrada`
+
+### 7. Enviar/Actualizar programas en ejecución
+`POST /postRunningProcesses`
+
+**Body:**
+```json
+{
+  "deviceId": "pc-pro-01",
+  "processes": [
+    {
+      "pid": "1287",
+      "name": "Google Chrome",
+      "cpu_usage": 14.3,
+      "memory_bytes": 524288000,
+      "status": "Run"
+    },
+    {
+      "pid": "451",
+      "name": "Finder",
+      "cpu_usage": 1.2,
+      "memory_bytes": 123731968,
+      "status": "Sleep"
+    }
+  ]
+}
+```
+
+**Respuesta (200 OK):**
+`Procesos actualizados`
 
 ## Autenticación
 Este API ahora requiere autenticación para proteger el acceso. A continuación tienes instrucciones prácticas para implementarlo desde una web externa o servidor.
@@ -171,4 +230,17 @@ curl -X POST https://<region>-<project>.cloudfunctions.net/postExternalAlert \
   -H "Content-Type: application/json" \
   -H "x-api-key: <FUNCTIONS_API_KEY>" \
   -d '{"deviceId":"pc-01","message":"Prueba","level":"info"}'
+```
+
+Obtener procesos en ejecución (con ID token):
+```bash
+curl -H "Authorization: Bearer <ID_TOKEN>" "https://<region>-<project>.cloudfunctions.net/getRunningProcesses?deviceId=pc-01"
+```
+
+Actualizar procesos en ejecución (con API key):
+```bash
+curl -X POST https://<region>-<project>.cloudfunctions.net/postRunningProcesses \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: <FUNCTIONS_API_KEY>" \
+  -d '{"deviceId":"pc-01","processes":[{"pid":"321","name":"Code","cpu_usage":5.2,"memory_bytes":232783872,"status":"Run"}]}'
 ```

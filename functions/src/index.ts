@@ -65,6 +65,35 @@ export const getInstalledApps = functions.runWith({ secrets: ["FUNCTIONS_API_KEY
 });
 
 /**
+ * Endpoint para obtener los programas en ejecución de un dispositivo.
+ */
+export const getRunningProcesses = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  const deviceId = req.query.deviceId as string;
+
+  if (!deviceId) {
+    res.status(400).send("Falta deviceId");
+    return;
+  }
+
+  const authResult = await authenticateRequest(req);
+  if (!authResult) {
+    res.status(401).send("No autorizado");
+    return;
+  }
+
+  try {
+    const snapshot = await admin.database()
+      .ref(`running_processes/${deviceId}`)
+      .once("value");
+
+    res.status(200).json(snapshot.val());
+  } catch (_error) {
+    console.error("Error al obtener procesos en ejecución:", _error);
+    res.status(500).send("Error al obtener procesos en ejecución");
+  }
+});
+
+/**
  * Endpoint para obtener el historial crítico de un dispositivo.
  */
 export const getCriticalHistory = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
@@ -151,6 +180,51 @@ export const postExternalAlert = functions.runWith({ secrets: ["FUNCTIONS_API_KE
   } catch (_error) {
     console.error("Error al guardar alerta:", _error);
     res.status(500).send("Error al guardar alerta");
+  }
+});
+
+/**
+ * Endpoint para enviar/actualizar programas en ejecución desde sistemas externos.
+ */
+export const postRunningProcesses = functions.runWith({ secrets: ["FUNCTIONS_API_KEY"] }).https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  if (req.method !== "POST") {
+    res.status(405).send("Método no permitido");
+    return;
+  }
+
+  const authResult = await authenticateRequest(req);
+  if (!authResult) {
+    res.status(401).send("No autorizado");
+    return;
+  }
+
+  const { deviceId, processes } = req.body as {
+    deviceId?: string;
+    processes?: Array<{
+      pid: string;
+      name: string;
+      cpu_usage?: number;
+      memory_bytes?: number;
+      status?: string;
+    }>;
+  };
+
+  if (!deviceId || !Array.isArray(processes)) {
+    res.status(400).send("Datos incompletos");
+    return;
+  }
+
+  try {
+    await admin.database().ref(`running_processes/${deviceId}`).set({
+      processes,
+      lastUpdate: admin.database.ServerValue.TIMESTAMP,
+      source: authResult.uid ? `user:${authResult.uid}` : "external-api"
+    });
+
+    res.status(200).send("Procesos actualizados");
+  } catch (_error) {
+    console.error("Error al guardar procesos en ejecución:", _error);
+    res.status(500).send("Error al guardar procesos en ejecución");
   }
 });
 
