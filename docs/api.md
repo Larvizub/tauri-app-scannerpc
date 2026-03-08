@@ -1,22 +1,55 @@
-# Documentación del API Externa - ScannerPC
+# API Externa ScannerPC
 
-Este API permite a aplicaciones externas interactuar con los datos de telemetría y alertas de los usuarios.
+Esta documentacion describe como conectar cualquier software web (frontend, backend o integracion de terceros) con el API HTTP de ScannerPC expuesto por Firebase Functions.
 
-## Base URL
-`https://<region>-<project-id>.cloudfunctions.net/`
+## 1. URL base
 
-## Endpoints
+Usa esta plantilla:
 
-### 1. Obtener últimas métricas
-`GET /getLatestMetrics?deviceId={deviceId}`
+`https://<region>-<project-id>.cloudfunctions.net`
 
-**Parámetros:**
-- `deviceId` (string): Identificador único de la computadora (hostname).
+Ejemplo:
 
-**Respuesta (200 OK):**
+`https://us-central1-mi-proyecto.cloudfunctions.net`
+
+## 2. Autenticacion soportada
+
+Todos los endpoints requieren autenticacion. El backend acepta dos modos:
+
+- `Authorization: Bearer <ID_TOKEN>`
+  - Recomendado para aplicaciones web con usuarios autenticados por Firebase Auth.
+- `x-api-key: <FUNCTIONS_API_KEY>`
+  - Recomendado para integraciones servidor a servidor.
+
+La funcion valida primero el ID Token (`verifyIdToken`) y, si no existe, intenta validar `x-api-key` contra `FUNCTIONS_API_KEY`.
+
+## 3. Compatibilidad web (navegadores)
+
+Si llamas el API directamente desde navegador, debes configurar CORS en Firebase Functions. Si no, el navegador puede bloquear la peticion por politica de origen cruzado.
+
+Opciones recomendadas:
+
+- Opcion A: habilitar CORS en Functions y restringir origenes permitidos.
+- Opcion B: consumir este API desde tu backend y exponer un proxy interno a tu frontend.
+
+## 4. Convenciones generales
+
+- `Content-Type` para POST: `application/json`.
+- `timestamp` se maneja como epoch en milisegundos.
+- `deviceId` es el identificador del equipo (normalmente hostname).
+- Respuestas de lectura desde RTDB pueden venir como objeto indexado por llave (`{"-N...": {...}}`) o `null` si no hay datos.
+
+## 5. Catalogo de endpoints
+
+### 5.1 GET `/getLatestMetrics?deviceId={deviceId}`
+
+Obtiene la ultima metrica disponible del dispositivo.
+
+Respuesta `200` (ejemplo):
+
 ```json
 {
-  "-Nxyz...": {
+  "-Nxyz": {
     "cpu_usage": 45.2,
     "memory_usage_pct": 60.1,
     "total_memory": 17179869184,
@@ -26,20 +59,23 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
     "network_rx_bps": 12500.5,
     "network_tx_bps": 5000.2,
     "disks": [
-      { "name": "/", "total": 500000000, "available": 200000000 }
+      {
+        "name": "/",
+        "total": 500000000,
+        "available": 200000000
+      }
     ],
     "timestamp": 1674384000000
   }
 }
 ```
 
-### 2. Obtener aplicaciones instaladas
-`GET /getInstalledApps?deviceId={deviceId}`
+### 5.2 GET `/getInstalledApps?deviceId={deviceId}`
 
-**Parámetros:**
-- `deviceId` (string): Identificador único de la computadora (hostname).
+Obtiene inventario de aplicaciones instaladas del dispositivo.
 
-**Respuesta (200 OK):**
+Respuesta `200` (ejemplo):
+
 ```json
 {
   "apps": [
@@ -50,13 +86,12 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 }
 ```
 
-### 3. Obtener programas en ejecución
-`GET /getRunningProcesses?deviceId={deviceId}`
+### 5.3 GET `/getRunningProcesses?deviceId={deviceId}`
 
-**Parámetros:**
-- `deviceId` (string): Identificador único de la computadora (hostname).
+Obtiene procesos en ejecucion reportados para el dispositivo.
 
-**Respuesta (200 OK):**
+Respuesta `200` (ejemplo):
+
 ```json
 {
   "processes": [
@@ -66,13 +101,6 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
       "cpu_usage": 14.3,
       "memory_bytes": 524288000,
       "status": "Run"
-    },
-    {
-      "pid": "451",
-      "name": "Finder",
-      "cpu_usage": 1.2,
-      "memory_bytes": 123731968,
-      "status": "Sleep"
     }
   ],
   "lastUpdate": 1674384000000,
@@ -80,29 +108,30 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 }
 ```
 
-### 4. Obtener Historial Crítico
-`GET /getCriticalHistory?deviceId={deviceId}`
+### 5.4 GET `/getCriticalHistory?deviceId={deviceId}`
 
-**Parámetros:**
-- `deviceId` (string): Identificador único de la computadora (hostname).
+Obtiene hasta los ultimos 100 eventos criticos para el dispositivo.
 
-**Respuesta (200 OK):**
+Respuesta `200` (ejemplo):
+
 ```json
 {
   "-UniqueEventID": {
     "type": "CPU",
     "value": 92.5,
     "threshold": 90,
-    "message": "Uso de CPU crítico (>90%)",
+    "message": "Uso de CPU critico (>90%)",
     "timestamp": 1674384000000
   }
 }
 ```
 
-### 5. Listar dispositivos (Usuarios)
-`GET /listDevices`
+### 5.5 GET `/listDevices`
 
-**Respuesta (200 OK):**
+Lista dispositivos registrados en RTDB.
+
+Respuesta `200` (ejemplo):
+
 ```json
 {
   "MacBook-Luis": {
@@ -113,10 +142,12 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 }
 ```
 
-### 6. Enviar Alerta Externa
-`POST /postExternalAlert`
+### 5.6 POST `/postExternalAlert`
 
-**Body:**
+Registra una alerta externa.
+
+Body:
+
 ```json
 {
   "deviceId": "pc-pro-01",
@@ -125,13 +156,22 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
 }
 ```
 
-**Respuesta (200 OK):**
+Campos:
+
+- `deviceId` (string, requerido)
+- `message` (string, requerido)
+- `level` (string, opcional, default `info`)
+
+Respuesta `200`:
+
 `Alerta registrada`
 
-### 7. Enviar/Actualizar programas en ejecución
-`POST /postRunningProcesses`
+### 5.7 POST `/postRunningProcesses`
 
-**Body:**
+Actualiza el estado de procesos en ejecucion para un dispositivo.
+
+Body:
+
 ```json
 {
   "deviceId": "pc-pro-01",
@@ -142,105 +182,120 @@ Este API permite a aplicaciones externas interactuar con los datos de telemetrí
       "cpu_usage": 14.3,
       "memory_bytes": 524288000,
       "status": "Run"
-    },
-    {
-      "pid": "451",
-      "name": "Finder",
-      "cpu_usage": 1.2,
-      "memory_bytes": 123731968,
-      "status": "Sleep"
     }
   ]
 }
 ```
 
-**Respuesta (200 OK):**
+Campos:
+
+- `deviceId` (string, requerido)
+- `processes` (array, requerido)
+- `processes[].pid` (string, requerido)
+- `processes[].name` (string, requerido)
+- `processes[].cpu_usage` (number, opcional)
+- `processes[].memory_bytes` (number, opcional)
+- `processes[].status` (string, opcional)
+
+Respuesta `200`:
+
 `Procesos actualizados`
 
-## Autenticación
-Este API ahora requiere autenticación para proteger el acceso. A continuación tienes instrucciones prácticas para implementarlo desde una web externa o servidor.
+## 6. Errores HTTP
 
-Opciones soportadas (ordenadas por recomendación):
+Codigos comunes del API:
 
-- Firebase ID Token (recomendado para clientes web)
+- `400`: faltan datos requeridos (por ejemplo `deviceId`).
+- `401`: no autorizado (token o api key invalida/ausente).
+- `405`: metodo HTTP no permitido (solo aplica en POST).
+- `500`: error interno al leer o escribir en RTDB.
 
-  - Flujo resumido:
-    1. El usuario se autentica en el cliente (Firebase Auth: email/password, OAuth providers, etc.).
-    2. El cliente obtiene el ID token con `await user.getIdToken()`.
-    3. El cliente incluye el token en la cabecera `Authorization: Bearer <ID_TOKEN>` al llamar a la Function.
+## 7. Quickstart para cualquier software web
 
-  - Ejemplo (cliente web, Firebase v9 modular):
+### 7.1 Cliente web con Firebase Auth (Bearer Token)
 
-  ```javascript
-  import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
+```ts
+import { initializeApp } from "firebase/app";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 
-  const auth = getAuth()
-  const cred = await signInWithEmailAndPassword(auth, email, password)
-  const idToken = await cred.user.getIdToken()
+const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "...",
+  projectId: "..."
+};
 
-  const res = await fetch(`https://<region>-<project>.cloudfunctions.net/getLatestMetrics?deviceId=pc-01`, {
-    headers: { 'Authorization': `Bearer ${idToken}` }
-  })
-  const data = await res.json()
-  ```
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-  - Nota: si el cliente usa OAuth (Google, GitHub, etc.) el flujo es similar: tras el login obtienes `user` y `user.getIdToken()`.
+async function getMetrics(deviceId: string) {
+  const cred = await signInWithEmailAndPassword(auth, "user@email.com", "password");
+  const idToken = await cred.user.getIdToken();
 
-- API key (para integraciones servidor-a-servidor o servicios de confianza)
+  const res = await fetch(
+    `https://<region>-<project-id>.cloudfunctions.net/getLatestMetrics?deviceId=${encodeURIComponent(deviceId)}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${idToken}`
+      }
+    }
+  );
 
-  - Flujo resumido:
-    1. Genera una clave secreta (p. ej. 32+ bytes aleatorios).
-    2. Guarda la clave como variable de entorno `FUNCTIONS_API_KEY` en el entorno de tus Cloud Functions.
-    3. El servidor que integra envía la cabecera `x-api-key: <FUNCTIONS_API_KEY>` en cada petición.
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
 
-  - Ejemplo (curl):
-
-  ```bash
-  curl -X POST https://<region>-<project>.cloudfunctions.net/postExternalAlert \
-    -H "Content-Type: application/json" \
-    -H "x-api-key: <FUNCTIONS_API_KEY>" \
-    -d '{"deviceId":"pc-01","message":"Reiniciar mañana","level":"warning"}'
-  ```
-
-  - Cómo configurar `FUNCTIONS_API_KEY`:
-    - Firebase Console: entra a tu Function → Configuration → Environment variables y añade `FUNCTIONS_API_KEY`.
-    - Con `gcloud` al desplegar: `gcloud functions deploy <NAME> --set-env-vars FUNCTIONS_API_KEY="<value>"`.
-
-Implementación en el servidor (qué valida la Function)
-
-- Las Functions del proyecto validan primero un ID token mediante `admin.auth().verifyIdToken(idToken)` y, como fallback, aceptan `x-api-key` cuando coincide con `process.env.FUNCTIONS_API_KEY`.
-
-Buenas prácticas de seguridad
-
-- Para clientes web, usa Firebase Auth: permite revocación de sesiones, reglas de acceso y control fino por usuario.
-- Evita exponer `FUNCTIONS_API_KEY` en código público. Úsala solo en servidores de confianza.
-- Rota la clave periódicamente y audita su uso.
-- Habilita CORS en las Functions si las va a consumir un navegador directamente; restringe `Access-Control-Allow-Origin` a tus dominios.
-
-Ejemplos rápidos
-
-Obtener métricas (con ID token):
-```bash
-curl -H "Authorization: Bearer <ID_TOKEN>" "https://<region>-<project>.cloudfunctions.net/getLatestMetrics?deviceId=pc-01"
+  return res.json();
+}
 ```
 
-Enviar alerta (con API key):
-```bash
-curl -X POST https://<region>-<project>.cloudfunctions.net/postExternalAlert \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: <FUNCTIONS_API_KEY>" \
-  -d '{"deviceId":"pc-01","message":"Prueba","level":"info"}'
+### 7.2 Backend web (Node/Express, Next API, Laravel, etc.) con API Key
+
+```ts
+async function postAlert(deviceId: string, message: string) {
+  const res = await fetch("https://<region>-<project-id>.cloudfunctions.net/postExternalAlert", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.SCANNERPC_API_KEY as string
+    },
+    body: JSON.stringify({
+      deviceId,
+      message,
+      level: "warning"
+    })
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+
+  return res.text();
+}
 ```
 
-Obtener procesos en ejecución (con ID token):
+## 8. Ejemplos curl
+
+GET con Bearer:
+
 ```bash
-curl -H "Authorization: Bearer <ID_TOKEN>" "https://<region>-<project>.cloudfunctions.net/getRunningProcesses?deviceId=pc-01"
+curl -H "Authorization: Bearer <ID_TOKEN>" \
+  "https://<region>-<project-id>.cloudfunctions.net/getRunningProcesses?deviceId=pc-01"
 ```
 
-Actualizar procesos en ejecución (con API key):
+POST con API key:
+
 ```bash
-curl -X POST https://<region>-<project>.cloudfunctions.net/postRunningProcesses \
+curl -X POST "https://<region>-<project-id>.cloudfunctions.net/postRunningProcesses" \
   -H "Content-Type: application/json" \
   -H "x-api-key: <FUNCTIONS_API_KEY>" \
   -d '{"deviceId":"pc-01","processes":[{"pid":"321","name":"Code","cpu_usage":5.2,"memory_bytes":232783872,"status":"Run"}]}'
 ```
+
+## 9. Checklist de integracion
+
+- Definir URL base segun tu region/proyecto.
+- Elegir autenticacion (Bearer para frontend autenticado, API key para backend).
+- Asegurar CORS si el consumo es directo desde navegador.
+- Manejar estados HTTP (`400/401/405/500`) en cliente.
+- Aplicar rotacion y resguardo de secretos (`FUNCTIONS_API_KEY`).
